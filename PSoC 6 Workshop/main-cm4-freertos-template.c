@@ -26,7 +26,7 @@ void main_task(void *arg);
 *******************************************************************************/
 TaskHandle_t main_task_handle;
 volatile int uxTopUsedPriority;
-uint32_t cm4_led_value = CYBSP_LED_STATE_OFF;
+uint32_t cm4_led_value = CYBSP_LED_STATE_ON;
 
 
 /*******************************************************************************

@@ -26,6 +26,29 @@ cyhal_ipc_queue_init(&cm0_msg_queue, queue_handle);
 
 
 /****************************************************************************************************************************************
+* Section 3 - Step 4
+* Reference code for 'getting' queue message (for the CM0 main.c)
+****************************************************************************************************************************************/
+// Wait for queue message to be recieved and get message from queue
+cyhal_ipc_queue_get(&cm0_msg_queue, &cm0_led_value, CYHAL_IPC_NEVER_TIMEOUT);
+
+
+
+/****************************************************************************************************************************************
+* Section 3 - Step 5
+* Reference code for initializing and driving a GPIO (for the CM0 main.c)
+* Init function goes above for loop
+* Write function goes within for loop, after queue get function
+****************************************************************************************************************************************/
+// Initialize GPIO using HAL APIs
+cyhal_gpio_init(CYBSP_USER_LED, CYHAL_GPIO_DIR_OUTPUT, CYHAL_GPIO_DRIVE_STRONG, cm0_led_value);
+
+// Drive value out to GPIO
+cyhal_gpio_write(CYBSP_USER_LED, cm0_led_value);
+
+
+
+/****************************************************************************************************************************************
 * Section 3 - Step 6
 * Reference code for retrieving IPC Message Queue handle (for the CM4 main.c) 
 ****************************************************************************************************************************************/
@@ -36,8 +59,28 @@ cyhal_ipc_queue_get_handle(&cm4_msg_queue, CYHAL_IPC_CHAN_0, 1UL);
 
 
 /****************************************************************************************************************************************
+* Section 3 - Step 7
+* Reference code for 'putting' queue message (for the CM4 main.c)
+****************************************************************************************************************************************/
+// Put message into queue, waiting if queue is full
+cyhal_ipc_queue_put(&cm4_msg_queue, &cm4_led_value, CYHAL_IPC_NEVER_TIMEOUT);
+
+
+
+/****************************************************************************************************************************************
+* Section 5 - Step 3
+* Include file serial flash
+****************************************************************************************************************************************/
+// Header file for serial flash driver
+#include "cy_serial_flash_qspi.h"
+
+
+
+/****************************************************************************************************************************************
 * Section 5 - Step 4
 * Reference code for initialize serial flash and enabling XIP for Wi-Fi firmware
+* Include header function shuld be place towards the top of the main.c file
+* The Init and Enable function should be placed within the main function
 ****************************************************************************************************************************************/
 // Header files for serial flash library and QSPI Configurator generated code
 #include "cycfg_qspi_memslot.h"
@@ -51,100 +94,62 @@ cy_serial_flash_qspi_enable_xip(true);
 
 
 /****************************************************************************************************************************************
-* Section 6 - Step 7
-* Reference code for HTTP Server - derived from Web Server code example
-* Includes two functions:
-*   softap_resource_handler(...)
-*   configure_http_server()
+* Section 5 - Step 7
+* Include files required for Wi-Fi Access Point - Code Snippet 8
 ****************************************************************************************************************************************/
-// Dynamic Event handler for HTTP POST and GET requests
-int32_t softap_resource_handler(const char *url_path,
-                                 const char *url_parameters,
-                                 cy_http_response_stream_t *stream,
-                                 void *arg,
-                                 cy_http_message_body_t *http_message_body)
-{
-    cy_rslt_t result = CY_RSLT_SUCCESS;
-    int32_t status = HTTP_REQUEST_HANDLE_SUCCESS;
+#include "cy_wcm.h"
+#include "cy_nw_helper.h"
 
-    switch (http_message_body->request_type)
-    {
-    case CY_HTTP_REQUEST_GET:
-    	/* Send the data of the device */
-    	result = cy_http_server_response_stream_write_payload(stream, SOFTAP_DEVICE_DATA, sizeof(SOFTAP_DEVICE_DATA) - 1);
-    	break;
 
-    case CY_HTTP_REQUEST_POST:
 
-		/* Compare the input from client to increase or decrease pwm value. */
-		if(!strncmp((char *)http_message_body->data, "Enable", 6))
-		{
-			// TODO Code when LED Turned On
-		}
-		else if(!strncmp((char *)http_message_body->data, "Disable", 7))
-		{
-			// TODO Code when LED Turned Off
-		}
+/****************************************************************************************************************************************
+* Section 5 - Step 8
+* Code to start Wi-Fi Access Point (calling function included in Code Snippet)
+****************************************************************************************************************************************/
+// Function prototype to be added at top of main.c
+void snippet_wcm_ap_get_client();
 
-		// TODO Notify Main task to update LED
-		
-    	/* Send the HTTP response. */
-    	result = cy_http_server_response_stream_write_payload(stream, HTTP_HEADER_204, sizeof(HTTP_HEADER_204) - 1);
-    	break;
+// Create and Start Access Point
+printf("Starting Wi-Fi Access Point\n");
+snippet_wcm_ap_get_client();
 
-    default:
-        break;
-    }
 
-    if (CY_RSLT_SUCCESS != result)
-    {
-        status = HTTP_REQUEST_HANDLE_ERROR;
-    }
 
-    return status;
-}
-
-// TODO Add Server Side Event Handler function here...
-
-// Function to configure HTTP server and register POST/GET handler
-void configure_http_server(void)
-{
-	cy_wcm_ip_address_t ip_addr;
-
-	/* IP address of SoftAp. */
-	cy_wcm_get_ip_addr(CY_WCM_INTERFACE_TYPE_AP, &ip_addr);
-	http_server_ip_address.ip_address.ip.v4 = ip_addr.ip.v4;
-	http_server_ip_address.ip_address.version = CY_SOCKET_IP_VER_V4;
-
-	/* Add IP address information to network interface object. */
-	nw_interface.object = (void *)&http_server_ip_address;
-	nw_interface.type = CY_NW_INF_TYPE_WIFI;
-
-	/* Initialize secure socket library. */
-	cy_http_server_network_init();
-
-	/* Allocate memory needed for secure HTTP server. */
-	cy_http_server_create(&nw_interface, HTTP_PORT, MAX_SOCKETS, NULL, &http_ap_server);
-
-	/* Configure dynamic and register resource handler. */
-	cy_resource_dynamic_data_t http_get_post_resource;
-	http_get_post_resource.resource_handler = softap_resource_handler;
-	http_get_post_resource.arg = NULL;
-	cy_http_server_register_resource(http_ap_server,
-			(uint8_t *)"/",
-			(uint8_t *)"text/html",
-			CY_DYNAMIC_URL_CONTENT,
-			&http_get_post_resource);
-
-	// TODO Register the Server Side Event Handler here...
-
-}
+/****************************************************************************************************************************************
+* Section 6 - Step 4
+* Include files required for HTTP Server - Derived from Wi-Fi Server Code Example
+****************************************************************************************************************************************/
+#include "http_server.h"
 
 
 
 /****************************************************************************************************************************************
 * Section 7 - Step 1
-* Reference code for adding support for server side event handling
+* Update value of LED variable based on POST command, then using Task Notify to update main task
+****************************************************************************************************************************************/
+// Code when LED Turned On
+cm4_led_value = CYBSP_LED_STATE_ON;
+
+// Code when LED Turned Off
+cm4_led_value = CYBSP_LED_STATE_OFF;
+
+// Notify Main task to update LED
+xTaskNotifyGive(main_task_handle);
+
+
+
+/****************************************************************************************************************************************
+* Section 7 - Step 2
+* Wait for Task Notify from HTTP Server task
+****************************************************************************************************************************************/
+// Take Task Notification (waiting max delay)
+ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+
+
+/****************************************************************************************************************************************
+* Section 8 - Step 1
+* Reference code for adding handler function for server side event handling
 ****************************************************************************************************************************************/
 // Server Side Event handler
 int32_t process_sse_handler( const char* url_path, const char* url_parameters,
@@ -168,7 +173,7 @@ int32_t process_sse_handler( const char* url_path, const char* url_parameters,
 
 
 /****************************************************************************************************************************************
-* Section 7 - Step 2
+* Section 8 - Step 2
 * Reference code for registering the Server Side Event handler (within the configure_http_server function)
 ****************************************************************************************************************************************/
 // Function calls to register server side event handler inside configure_http_server() function
@@ -184,10 +189,19 @@ cy_http_server_register_resource( http_ap_server,
 
 
 /****************************************************************************************************************************************
-* Section 7 - Step 3
-* Reference code for registering the Server Side Event handler (within the configure_http_server function)
+* Section 8 - Step 3
+* Character array to hold SSE message payload
+* Function to be pasted in differt section of the main function (follow lab guide)
 ****************************************************************************************************************************************/
-// Write payload stream to web client, updating the LED status
-cy_http_server_response_stream_write_payload( http_event_stream, EVENT_STREAM_DATA, sizeof(EVENT_STREAM_DATA)-1 );
-cy_http_server_response_stream_write_payload( http_event_stream, http_response, sizeof(http_response)-1 );
-cy_http_server_response_stream_write_payload( http_event_stream, LFLF, sizeof(LFLF)-1 );
+
+char http_response[64] = {0}; // character array for hold SSE message
+
+sprintf( http_response, "The LED is turned ON." );  // if cm4_led_value == CYBSP_LED_STATE_ON
+
+sprintf( http_response, "The LED is turned OFF." ); // else condition
+
+// Send message payload to SSE stream function (included in http_server.c)
+send_http_stream(&http_response);
+
+
+
