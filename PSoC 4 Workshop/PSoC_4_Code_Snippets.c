@@ -10,12 +10,21 @@ Cy_SCB_UART_PutString(CYBSP_UART_HW, "\x1b[2J\x1b[;H");
 
 /****************************************************************************************************************************************
 * Section 3 - Step 2
-* Reference code to register an interrupt callback function
+* Reference code to register an interrupt callback function initialized within main function
+* Button Callbck function to be added to top of main.c file
 ****************************************************************************************************************************************/
 /* Code to register a GPIO interrupt */
 cy_stc_sysint_t ButtonIRQ_cfg = { .intrPriority = 3, .intrSrc = SW1_IRQ };
 Cy_SysInt_Init(&ButtonIRQ_cfg, Button_Callback);
 NVIC_EnableIRQ(SW1_IRQ);
+
+
+/* Callback function for GPIO Interrupt */
+void Button_Callback(void)
+{
+	Cy_GPIO_ClearInterrupt(SW1_PORT, SW1_NUM);
+	Cy_GPIO_Inv(CYBSP_USER_LED1_PORT, CYBSP_USER_LED1_NUM);
+}
 
 
 
@@ -35,6 +44,32 @@ NVIC_EnableIRQ(Timer_IRQ);
 /* Start TCPWM Timer */
 Cy_TCPWM_TriggerStart(Timer_HW, Timer_MASK);
 
+
+
+/****************************************************************************************************************************************
+* Section 4 - Step 3
+* Callback function for timer interrupt with global flag
+****************************************************************************************************************************************/
+volatile bool timer_expired = false;
+void Timer_Callback(void)
+{
+	Cy_TCPWM_ClearInterrupt(Timer_HW, Timer_NUM, CY_TCPWM_INT_ON_TC);
+	timer_expired = true;
+}
+
+
+
+/****************************************************************************************************************************************
+* Section 4 - Step 4
+* Callback function for timer interrupt with global flag
+****************************************************************************************************************************************/
+for(;;)
+{
+	if (timer_expired) {
+		timer_expired = false;
+		Cy_GPIO_Inv(CYBSP_USER_LED1_PORT, CYBSP_USER_LED1_NUM);
+	}
+}
 
 
 /****************************************************************************************************************************************
@@ -78,6 +113,7 @@ void process_touch(void)
 			Cy_GPIO_Write(CYBSP_LED_BTN0_PORT, CYBSP_LED_BTN0_NUM, CYBSP_LED_STATE_OFF);
 		} else  {
 			Cy_GPIO_Write(CYBSP_LED_BTN0_PORT, CYBSP_LED_BTN0_NUM, CYBSP_LED_STATE_ON);
+			// Game Over - Wrong Button
 		}
 	}
 	prev_button0 = button0;
@@ -89,24 +125,45 @@ void process_touch(void)
 /****************************************************************************************************************************************
 * Section 8 - Step 2
 * Reference code to check for End of Game condition (all LEDs are not cleared)
+* Reference code when incoorect button is pressed
 ****************************************************************************************************************************************/
-/* IF statement to check is any CYBSP_LED_BTNx is still on */
+/* IF statement to check if any CYBSP_LED_BTNx is still on */
 if ( (Cy_GPIO_Read(CYBSP_LED_BTN0_PORT, CYBSP_LED_BTN0_NUM) == CYBSP_LED_STATE_ON) || \
      (Cy_GPIO_Read(CYBSP_LED_BTN1_PORT, CYBSP_LED_BTN1_NUM) == CYBSP_LED_STATE_ON) || \
 	 (Cy_GPIO_Read(CYBSP_LED_BTN2_PORT, CYBSP_LED_BTN2_NUM) == CYBSP_LED_STATE_ON) )
 {
 	// Game Over - Too Slow
+	Cy_SCB_UART_PutString(CYBSP_UART_HW, "Game Over - Too Slow\r\n");
+	Cy_SysPm_CpuEnterSleep();
 } else {
 	// Good Job - Start next round
 
 }
 
 
+/* End of game scenario for incoorection button (pressed with LED is not lit) */
+Cy_SCB_UART_PutString(CYBSP_UART_HW, "Game Over - Wrong Button\r\n");
+Cy_SysPm_CpuEnterSleep();
+
+
 
 /****************************************************************************************************************************************
 * Section 8 - Step 3
+* Reference function to generate a random number using TRNG
 * Reference code to turn on specific LED based on random number
 ****************************************************************************************************************************************/
+/* Unsigned Int for randomly generated number */
+uint32_t rndNum = 0;
+
+
+/* Enable the Crypto IP */
+Cy_Crypto_Enable(CRYPTO);
+
+
+/* Generate a 32-bit random number */
+Cy_Crypto_Trng(CRYPTO, 32UL, &rndNum);
+
+
 /* Code to turn on CYBSP_LED_BTNx corresponding to randomly generated number */
 if (rndNum%3 == 0) {
 	Cy_GPIO_Write(CYBSP_LED_BTN0_PORT, CYBSP_LED_BTN0_NUM, CYBSP_LED_STATE_ON);

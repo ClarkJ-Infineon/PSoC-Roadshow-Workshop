@@ -116,10 +116,21 @@ snippet_wcm_ap_get_client();
 
 
 /****************************************************************************************************************************************
-* Section 6 - Step 4
+* Section 6 - Step 5
 * Include files required for HTTP Server - Derived from Wi-Fi Server Code Example
 ****************************************************************************************************************************************/
 #include "http_server.h"
+
+
+
+/****************************************************************************************************************************************
+* Section 6 - Step 6
+* Code to start HTTP Server (callin function derived from Wi-Fi Server Code Example)
+****************************************************************************************************************************************/
+// Initialize and Start HTTP Server
+printf("Start HTTP Server\n");
+start_http_server();
+
 
 
 
