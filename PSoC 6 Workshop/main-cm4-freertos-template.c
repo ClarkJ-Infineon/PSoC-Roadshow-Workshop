@@ -61,9 +61,6 @@ int main(void)
 	/* Enable global interrupts */
 	__enable_irq();
 
-	// TODO Initialize Serial Flash
-
-
 	cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE);
 	printf("\x1b[2J\x1b[;H");
 	printf("Hello PSoC 6 Technical Workshop\n");

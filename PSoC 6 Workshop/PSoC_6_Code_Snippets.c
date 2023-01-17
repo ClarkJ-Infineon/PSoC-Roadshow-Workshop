@@ -68,33 +68,7 @@ cyhal_ipc_queue_put(&cm4_msg_queue, &cm4_led_value, CYHAL_IPC_NEVER_TIMEOUT);
 
 
 /****************************************************************************************************************************************
-* Section 5 - Step 3
-* Include file serial flash
-****************************************************************************************************************************************/
-// Header file for serial flash driver
-#include "cy_serial_flash_qspi.h"
-
-
-
-/****************************************************************************************************************************************
-* Section 5 - Step 4
-* Reference code for initialize serial flash and enabling XIP for Wi-Fi firmware
-* Include header function shuld be place towards the top of the main.c file
-* The Init and Enable function should be placed within the main function
-****************************************************************************************************************************************/
-// Header files for serial flash library and QSPI Configurator generated code
-#include "cycfg_qspi_memslot.h"
-
-// Init QSPI and enable XIP to get the Wi-Fi firmware from the QSPI NOR flash
-cy_serial_flash_qspi_init(smifMemConfigs[0], CYBSP_QSPI_D0, CYBSP_QSPI_D1,
-							  CYBSP_QSPI_D2, CYBSP_QSPI_D3, NC, NC, NC, NC,
-							  CYBSP_QSPI_SCK, CYBSP_QSPI_SS, 50000000lu);
-cy_serial_flash_qspi_enable_xip(true);
-
-
-
-/****************************************************************************************************************************************
-* Section 5 - Step 7
+* Section 5 - Step 5
 * Include files required for Wi-Fi Access Point - Code Snippet 8
 ****************************************************************************************************************************************/
 #include "cy_wcm.h"
@@ -103,7 +77,7 @@ cy_serial_flash_qspi_enable_xip(true);
 
 
 /****************************************************************************************************************************************
-* Section 5 - Step 8
+* Section 5 - Step 6
 * Code to start Wi-Fi Access Point (calling function included in Code Snippet)
 ****************************************************************************************************************************************/
 // Function prototype to be added at top of main.c

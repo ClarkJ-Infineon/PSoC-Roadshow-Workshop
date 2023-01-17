@@ -11,17 +11,10 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-// Header file for serial flash driver
-#include "cy_serial_flash_qspi.h"
-
-// Header files for serial flash library and QSPI Configurator generated code
-#include "cycfg_qspi_memslot.h"
-
 #include "cy_wcm.h"
 #include "cy_nw_helper.h"
 
 #include "http_server.h"
-
 
 /* RTOS related macros. */
 #define MAIN_TASK_STACK_SIZE        (10 * 1024)
@@ -73,13 +66,6 @@ int main(void)
 
 	/* Enable global interrupts */
 	__enable_irq();
-
-	// Init QSPI and enable XIP to get the Wi-Fi firmware from the QSPI NOR flash
-	cy_serial_flash_qspi_init(smifMemConfigs[0], CYBSP_QSPI_D0, CYBSP_QSPI_D1,
-								  CYBSP_QSPI_D2, CYBSP_QSPI_D3, NC, NC, NC, NC,
-								  CYBSP_QSPI_SCK, CYBSP_QSPI_SS, 50000000lu);
-	cy_serial_flash_qspi_enable_xip(true);
-
 
 	cy_retarget_io_init(CYBSP_DEBUG_UART_TX, CYBSP_DEBUG_UART_RX, CY_RETARGET_IO_BAUDRATE);
 	printf("\x1b[2J\x1b[;H");
